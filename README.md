@@ -100,3 +100,27 @@ xcodebuild -scheme LivePaper -destination "platform=macOS" build
   - **Result**: `Executed 4 tests, with 0 failures (0 unexpected)`.
 - **Xcode Build**:
   - `xcodebuild -scheme LivePaper -destination platform=macOS build` completed with `** BUILD SUCCEEDED **`.
+
+
+---
+
+## Opening the App on macOS (Gatekeeper Notice)
+
+Because `LivePaper` is an open-source personal project built without a paid Apple Developer Program subscription ($99/year), macOS Gatekeeper flags downloaded releases as unverified/not notarized.
+
+### Option 1: Right-Click to Open (One-Time)
+1. In **Finder**, locate `LivePaper.app` (e.g. in your Downloads or Applications folder).
+2. **Right-click** (or `Control`-click) on `LivePaper.app` and choose **Open**.
+3. In the warning dialog that appears, click the **Open** button.
+4. macOS remembers this choice and will open the app normally in the future.
+
+### Option 2: Remove the Download Quarantine Attribute via Terminal
+If macOS blocks it completely, remove the web quarantine flag by running:
+```bash
+xattr -cr /path/to/LivePaper.app
+```
+For example, if it is in your Downloads folder:
+```bash
+xattr -cr ~/Downloads/LivePaper.app
+```
+Then double-click to open.
