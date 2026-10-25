@@ -72,6 +72,15 @@ public final class WallpaperPersistenceService: WallpaperPersistenceServiceProto
                 let activeVideoPath = sharedConfigFileURL.deletingLastPathComponent().appendingPathComponent("active_wallpaper.mp4")
                 try? FileManager.default.removeItem(at: activeVideoPath)
                 try? FileManager.default.copyItem(at: URL(fileURLWithPath: path), to: activeVideoPath)
+                
+                // Also copy directly into installed LivePaper.saver bundle resources if it exists
+                let saverResourceDir = FileManager.default.homeDirectoryForCurrentUser
+                    .appendingPathComponent("Library/Screen Savers/LivePaper.saver/Contents/Resources", isDirectory: true)
+                if FileManager.default.fileExists(atPath: saverResourceDir.path) {
+                    let saverVideoPath = saverResourceDir.appendingPathComponent("active_wallpaper.mp4")
+                    try? FileManager.default.removeItem(at: saverVideoPath)
+                    try? FileManager.default.copyItem(at: URL(fileURLWithPath: path), to: saverVideoPath)
+                }
             }
         } catch {
             print("[WallpaperPersistenceService] Failed to encode configuration: \(error)")

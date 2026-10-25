@@ -69,18 +69,20 @@ public final class LivePaperSaverView: ScreenSaverView {
     }
     
     private func findVideoURL() -> (url: URL?, scalingGravity: AVLayerVideoGravity) {
-        let homeDir = NSHomeDirectory()
         var scalingGravity: AVLayerVideoGravity = .resizeAspectFill
+        let homeDir = NSHomeDirectory()
+        
+        // 1. Bundle resources ALWAYS has full sandbox access
+        if let bundlePath = Bundle(for: Self.self).path(forResource: "active_wallpaper", ofType: "mp4"),
+           FileManager.default.fileExists(atPath: bundlePath) {
+            return (URL(fileURLWithPath: bundlePath), scalingGravity)
+        }
         
         // Candidate locations (ordered by accessibility in sandboxed legacyScreenSaver)
         let candidatePaths = [
-            // 1. Movies/LivePaper (Always accessible to sandbox via symlink)
             "\(homeDir)/Movies/LivePaper/active_wallpaper.mp4",
-            // 2. Saver bundle resources (if packaged inside)
-            Bundle(for: Self.self).path(forResource: "active_wallpaper", ofType: "mp4"),
-            // 3. Application Support
             "\(homeDir)/Library/Application Support/LivePaper/active_wallpaper.mp4"
-        ].compactMap { $0 }
+        ]
         
         // Also check config.json if present
         let configPaths = [
