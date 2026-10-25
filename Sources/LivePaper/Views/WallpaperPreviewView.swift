@@ -1,5 +1,6 @@
 import SwiftUI
-import AVKit
+import AppKit
+import AVFoundation
 
 public struct WallpaperPreviewView: View {
     let url: URL?
@@ -23,7 +24,7 @@ public struct WallpaperPreviewView: View {
                 )
             
             if let player = player {
-                VideoPlayer(player: player)
+                NativeVideoPlayerView(player: player, scalingMode: scalingMode)
                     .clipShape(RoundedRectangle(cornerRadius: 12))
             } else {
                 VStack(spacing: 12) {
@@ -66,5 +67,18 @@ public struct WallpaperPreviewView: View {
         player?.pause()
         player?.removeAllItems()
         player = nil
+    }
+}
+
+public struct NativeVideoPlayerView: NSViewRepresentable {
+    let player: AVPlayer
+    let scalingMode: VideoScalingMode
+    
+    public func makeNSView(context: Context) -> DesktopPlayerView {
+        return DesktopPlayerView(player: player, scalingMode: scalingMode)
+    }
+    
+    public func updateNSView(_ nsView: DesktopPlayerView, context: Context) {
+        nsView.updateScalingMode(scalingMode)
     }
 }
