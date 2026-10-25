@@ -24,6 +24,16 @@ public final class WallpaperSettings: ObservableObject {
         configuration.videoName = url.lastPathComponent
         configuration.videoBookmark = bookmark
         activeVideoURL = url
+        
+        // Add to recents (max 5 items, deduplicate)
+        let newItem = RecentWallpaperItem(path: url.path, name: url.lastPathComponent, bookmark: bookmark)
+        var recents = configuration.recentWallpapers.filter { $0.path != url.path }
+        recents.insert(newItem, at: 0)
+        if recents.count > 5 {
+            recents = Array(recents.prefix(5))
+        }
+        configuration.recentWallpapers = recents
+        
         save()
     }
     

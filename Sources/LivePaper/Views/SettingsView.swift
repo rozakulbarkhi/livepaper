@@ -44,6 +44,22 @@ public struct SettingsView: View {
                 
                 Divider()
                 
+                // Battery Saver toggle
+                Toggle(isOn: $settings.configuration.pauseOnBattery) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Label("Battery Saver Mode", systemImage: "battery.50")
+                        Text("Pause live wallpaper playback automatically when running on battery")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                }
+                .onChange(of: settings.configuration.pauseOnBattery) { _, enabled in
+                    settings.save()
+                    DesktopWallpaperController.shared.pauseOnBatteryEnabled = enabled
+                }
+                
+                Divider()
+                
                 // Auto-play on launch
                 Toggle(isOn: $settings.configuration.autoPlayOnLaunch) {
                     Label("Auto-start Wallpaper on App Launch", systemImage: "play.circle")

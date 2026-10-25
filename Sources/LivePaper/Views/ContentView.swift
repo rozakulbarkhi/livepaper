@@ -4,6 +4,7 @@ public struct ContentView: View {
     @ObservedObject var settings: WallpaperSettings
     @State private var errorMessage: String?
     @State private var isProcessing = false
+    @State private var isTargetedForDrop = false
     
     public init(settings: WallpaperSettings) {
         self.settings = settings
@@ -47,8 +48,59 @@ public struct ContentView: View {
                     .cornerRadius(8)
                 }
                 
-                // Video Picker
-                VideoPickerView(settings: settings, errorMessage: $errorMessage)
+                // Video Picker & Drag Drop Zone
+                VStack(spacing: 8) {
+                    VideoPickerView(settings: settings, errorMessage: $errorMessage)
+                    
+                    // Drop area indicator
+                    HStack {
+                        Image(systemName: "arrow.down.doc")
+                        Text("Or drag & drop any MP4/MOV video here")
+                    }
+                    .font(.caption)
+                    .foregroundColor(isTargetedForDrop ? .accentColor : .secondary)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 8)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8)
+                            .strokeBorder(isTargetedForDrop ? Color.accentColor : Color.secondary.opacity(0.3), style: StrokeStyle(lineWidth: 1.5, dash: [6]))
+                    )
+                }
+                .onDrop(of: [.fileURL], isTargeted: $isTargetedForDrop) { providers in
+                    handleDrop(providers: providers)
+                }
+                
+                // Recent Wallpapers (if available)
+                if !settings.configuration.recentWallpapers.isEmpty {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Recent Wallpapers")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 8) {
+                                ForEach(settings.configuration.recentWallpapers) { item in
+                                    Button(action: { selectRecent(item) }) {
+                                        HStack(spacing: 6) {
+                                            Image(systemName: "film")
+                                                .font(.caption2)
+                                            Text(item.name)
+                                                .font(.caption)
+                                                .lineLimit(1)
+                                        }
+                                        .padding(.horizontal, 10)
+                                        .padding(.vertical, 5)
+                                        .background(
+                                            RoundedRectangle(cornerRadius: 6)
+                                                .fill(item.path == settings.configuration.videoPath ? Color.accentColor.opacity(0.2) : Color(nsColor: .controlBackgroundColor))
+                                        )
+                                    }
+                                    .buttonStyle(.plain)
+                                }
+                            }
+                        }
+                    }
+                }
                 
                 // Preview
                 WallpaperPreviewView(
@@ -85,7 +137,7 @@ public struct ContentView: View {
             }
             .padding(24)
         }
-        .frame(minWidth: 540, idealWidth: 600, minHeight: 650, idealHeight: 720)
+        .frame(minWidth: 540, idealWidth: 600, minHeight: 650, idealHeight: 740)
     }
     
     @ViewBuilder
@@ -132,6 +184,40 @@ public struct ContentView: View {
         return nil
     }
     
+    private func selectRecent(_ item: RecentWallpaperItem) {
+        let url = URL(fileURLWithPath: item.path)
+        let bookmark = item.bookmark ?? WallpaperPersistenceService.shared.createBookmark(for: url)
+        settings.updateVideo(url: url, bookmark: bookmark)
+        applyWallpaper()
+    }
+    
+    private func handleDrop(providers: [NSItemProvider]) -> Bool {
+        guard let provider = providers.first else { return false }
+        
+        provider.loadItem(forTypeIdentifier: "public.file-url", options: nil) { item, _ in
+            guard let data = item as? Data,
+                  let url = URL(dataRepresentation: data, relativeTo: nil) else {
+                return
+            }
+            
+            let ext = url.pathExtension.lowercased()
+            guard ["mp4", "mov", "m4v"].contains(ext) else {
+                Task { @MainActor in
+                    self.errorMessage = "Please drop an MP4 or MOV video file."
+                }
+                return
+            }
+            
+            Task { @MainActor in
+                let bookmark = WallpaperPersistenceService.shared.createBookmark(for: url)
+                self.settings.updateVideo(url: url, bookmark: bookmark)
+                self.errorMessage = nil
+                self.applyWallpaper()
+            }
+        }
+        return true
+    }
+    
     private func applyWallpaper() {
         guard let url = resolvedVideoURL() else {
             errorMessage = "No valid video file could be located."
@@ -146,7 +232,8 @@ public struct ContentView: View {
                 try await DesktopWallpaperController.shared.startWallpaper(
                     url: url,
                     scalingMode: settings.configuration.scalingMode,
-                    loop: settings.configuration.isLooping
+                    loop: settings.configuration.isLooping,
+                    pauseOnBattery: settings.configuration.pauseOnBattery
                 )
                 isProcessing = false
             } catch {

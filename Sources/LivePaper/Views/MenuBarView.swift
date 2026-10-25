@@ -56,6 +56,19 @@ public struct MenuBarView: View {
                     }
                 }
                 
+                // Recents submenu if any
+                if !settings.configuration.recentWallpapers.isEmpty {
+                    Divider()
+                    
+                    Menu("Recent Wallpapers") {
+                        ForEach(settings.configuration.recentWallpapers) { item in
+                            Button(item.name) {
+                                selectRecent(item)
+                            }
+                        }
+                    }
+                }
+                
                 Divider()
                 
                 Button(action: openMainWindow) {
@@ -103,6 +116,13 @@ public struct MenuBarView: View {
         DesktopWallpaperController.shared.stopWallpaper()
     }
     
+    private func selectRecent(_ item: RecentWallpaperItem) {
+        let url = URL(fileURLWithPath: item.path)
+        let bookmark = item.bookmark ?? WallpaperPersistenceService.shared.createBookmark(for: url)
+        settings.updateVideo(url: url, bookmark: bookmark)
+        applyActiveVideo()
+    }
+    
     private func applyActiveVideo() {
         var targetURL: URL?
         if let bookmark = settings.configuration.videoBookmark {
@@ -120,7 +140,8 @@ public struct MenuBarView: View {
                 try await DesktopWallpaperController.shared.startWallpaper(
                     url: url,
                     scalingMode: settings.configuration.scalingMode,
-                    loop: settings.configuration.isLooping
+                    loop: settings.configuration.isLooping,
+                    pauseOnBattery: settings.configuration.pauseOnBattery
                 )
             } catch {
                 settings.status = .error(message: error.localizedDescription)
@@ -129,7 +150,6 @@ public struct MenuBarView: View {
     }
     
     private func openMainWindow() {
-        // Bring all app windows to front
         NSApplication.shared.activate(ignoringOtherApps: true)
         if let window = NSApplication.shared.windows.first(where: { !($0 is DesktopWallpaperWindow) }) {
             window.makeKeyAndOrderFront(nil)

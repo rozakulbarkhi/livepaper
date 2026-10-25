@@ -8,9 +8,11 @@ final class LivePaperTests: XCTestCase {
         XCTAssertTrue(config.isLooping)
         XCTAssertTrue(config.autoPlayOnLaunch)
         XCTAssertFalse(config.launchAtLogin)
+        XCTAssertFalse(config.pauseOnBattery)
         XCTAssertEqual(config.scalingMode, .aspectFill)
         XCTAssertNil(config.videoPath)
         XCTAssertNil(config.videoName)
+        XCTAssertTrue(config.recentWallpapers.isEmpty)
     }
     
     func testScalingModes() {
@@ -26,6 +28,10 @@ final class LivePaperTests: XCTestCase {
         config.videoName = "video.mp4"
         config.scalingMode = .aspectFit
         config.isLooping = false
+        config.pauseOnBattery = true
+        config.recentWallpapers = [
+            RecentWallpaperItem(path: "/Users/test/video.mp4", name: "video.mp4", bookmark: nil)
+        ]
         
         let encoder = JSONEncoder()
         let data = try encoder.encode(config)
@@ -37,6 +43,8 @@ final class LivePaperTests: XCTestCase {
         XCTAssertEqual(decoded.videoName, "video.mp4")
         XCTAssertEqual(decoded.scalingMode, .aspectFit)
         XCTAssertFalse(decoded.isLooping)
+        XCTAssertTrue(decoded.pauseOnBattery)
+        XCTAssertEqual(decoded.recentWallpapers.count, 1)
     }
     
     func testLockScreenCapabilityReport() {
@@ -49,5 +57,11 @@ final class LivePaperTests: XCTestCase {
         } else {
             XCTFail("Lock screen should be reported as unsupported via public APIs")
         }
+    }
+    
+    func testPowerMonitorQuery() {
+        let monitor = PowerMonitorService.shared
+        // Verification that query does not throw/crash and returns a valid boolean
+        _ = monitor.isOnBattery
     }
 }

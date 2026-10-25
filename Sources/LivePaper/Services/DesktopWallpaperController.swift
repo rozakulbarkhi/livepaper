@@ -1,16 +1,18 @@
 import AppKit
 import AVFoundation
 
-public final class DesktopWallpaperController: NSObject, WallpaperPlayerDelegate, DisplayMonitorDelegate, @unchecked Sendable {
+public final class DesktopWallpaperController: NSObject, WallpaperPlayerDelegate, DisplayMonitorDelegate, PowerMonitorDelegate, @unchecked Sendable {
     public static let shared = DesktopWallpaperController()
     
     private let player = WallpaperPlayer()
     private let displayMonitor = DisplayMonitorService()
+    private let powerMonitor = PowerMonitorService.shared
     private var wallpaperWindows: [DesktopWallpaperWindow] = []
     
     private var currentURL: URL?
     private var currentScalingMode: VideoScalingMode = .aspectFill
     private var isPlayingWallpaper = false
+    public var pauseOnBatteryEnabled = false
     
     public var onStatusChanged: (@Sendable (WallpaperStatus) -> Void)?
     
@@ -18,22 +20,28 @@ public final class DesktopWallpaperController: NSObject, WallpaperPlayerDelegate
         super.init()
         player.delegate = self
         displayMonitor.delegate = self
+        powerMonitor.delegate = self
     }
     
     @MainActor
-    public func startWallpaper(url: URL, scalingMode: VideoScalingMode, loop: Bool = true) async throws {
+    public func startWallpaper(url: URL, scalingMode: VideoScalingMode, loop: Bool = true, pauseOnBattery: Bool = false) async throws {
         self.currentURL = url
         self.currentScalingMode = scalingMode
+        self.pauseOnBatteryEnabled = pauseOnBattery
         
         onStatusChanged?(.loading)
         
         try await player.loadVideo(url: url, loop: loop, muted: true)
         
         setupWindows()
-        player.play()
-        isPlayingWallpaper = true
         
-        onStatusChanged?(.playing(videoName: url.lastPathComponent))
+        if pauseOnBattery && powerMonitor.isOnBattery {
+            onStatusChanged?(.paused)
+        } else {
+            player.play()
+            isPlayingWallpaper = true
+            onStatusChanged?(.playing(videoName: url.lastPathComponent))
+        }
     }
     
     @MainActor
@@ -74,6 +82,25 @@ public final class DesktopWallpaperController: NSObject, WallpaperPlayerDelegate
         wallpaperWindows.removeAll()
     }
     
+    // MARK: - PowerMonitorDelegate
+    
+    public func powerSourceDidChange(isOnBattery: Bool) {
+        Task { @MainActor in
+            guard self.pauseOnBatteryEnabled, self.isPlayingWallpaper else { return }
+            if isOnBattery {
+                print("[DesktopWallpaperController] Running on battery power. Pausing live wallpaper...")
+                self.player.pause()
+                self.onStatusChanged?(.paused)
+            } else {
+                print("[DesktopWallpaperController] Connected to AC power. Resuming live wallpaper...")
+                self.player.play()
+                if let name = self.currentURL?.lastPathComponent {
+                    self.onStatusChanged?(.playing(videoName: name))
+                }
+            }
+        }
+    }
+    
     // MARK: - WallpaperPlayerDelegate
     
     public func wallpaperPlayer(_ player: WallpaperPlayer, didChangeStatus status: WallpaperStatus) {
@@ -108,6 +135,9 @@ public final class DesktopWallpaperController: NSObject, WallpaperPlayerDelegate
         Task { @MainActor in
             print("[DesktopWallpaperController] System did wake. Resuming wallpaper player...")
             if self.isPlayingWallpaper {
+                if self.pauseOnBatteryEnabled && self.powerMonitor.isOnBattery {
+                    return
+                }
                 self.player.play()
             }
         }
@@ -124,6 +154,9 @@ public final class DesktopWallpaperController: NSObject, WallpaperPlayerDelegate
         Task { @MainActor in
             print("[DesktopWallpaperController] Screens woke up. Resuming wallpaper...")
             if self.isPlayingWallpaper {
+                if self.pauseOnBatteryEnabled && self.powerMonitor.isOnBattery {
+                    return
+                }
                 self.player.play()
             }
         }

@@ -16,7 +16,7 @@ struct LivePaperApp: App {
         }
         .windowStyle(.titleBar)
         .windowToolbarStyle(.unified)
-        .defaultSize(width: 600, height: 720)
+        .defaultSize(width: 600, height: 740)
         
         MenuBarExtra("LivePaper", systemImage: "sparkles.tv") {
             MenuBarView(settings: settings)
@@ -49,7 +49,8 @@ struct LivePaperApp: App {
                         try await DesktopWallpaperController.shared.startWallpaper(
                             url: url,
                             scalingMode: settings.configuration.scalingMode,
-                            loop: settings.configuration.isLooping
+                            loop: settings.configuration.isLooping,
+                            pauseOnBattery: settings.configuration.pauseOnBattery
                         )
                     } catch {
                         print("[LivePaperApp] Auto-play failed: \(error.localizedDescription)")
