@@ -8,7 +8,7 @@ struct LivePaperApp: App {
     init() {}
     
     var body: some Scene {
-        WindowGroup {
+        Window("LivePaper", id: "main-window") {
             ContentView(settings: settings)
                 .onAppear {
                     setupApp()
@@ -17,6 +17,11 @@ struct LivePaperApp: App {
         .windowStyle(.titleBar)
         .windowToolbarStyle(.unified)
         .defaultSize(width: 600, height: 720)
+        
+        MenuBarExtra("LivePaper", systemImage: "sparkles.tv") {
+            MenuBarView(settings: settings)
+        }
+        .menuBarExtraStyle(.window)
     }
     
     private func setupApp() {
