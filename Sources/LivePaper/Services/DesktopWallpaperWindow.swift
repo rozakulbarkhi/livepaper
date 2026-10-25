@@ -14,16 +14,16 @@ public final class DesktopWallpaperWindow: NSWindow {
             defer: false
         )
         
+        // Prevent window release on close crash
+        self.isReleasedWhenClosed = false
         self.isOpaque = true
         self.backgroundColor = .black
         self.hasShadow = false
         
-        // Essential desktop wallpaper window configurations:
-        // Set window level to desktop level (just above desktop picture, below icons)
-        // Int(CGWindowLevelForKey(.desktopWindow)) is standard for background wallpaper
+        // Set window level to desktop level (just above desktop background, below icons)
         self.level = NSWindow.Level(Int(CGWindowLevelForKey(.desktopWindow)))
         
-        // Can join all spaces and appear in full screen
+        // Ensure seamless display on all spaces and full screens
         self.collectionBehavior = [
             .canJoinAllSpaces,
             .stationary,
@@ -31,7 +31,7 @@ public final class DesktopWallpaperWindow: NSWindow {
             .fullScreenAuxiliary
         ]
         
-        // Pass all mouse/keyboard events through to the actual desktop and finder icons
+        // Pass mouse/keyboard events through to Finder and desktop icons
         self.ignoresMouseEvents = true
         self.acceptsMouseMovedEvents = false
         
@@ -41,6 +41,11 @@ public final class DesktopWallpaperWindow: NSWindow {
     
     public func updateScalingMode(_ mode: VideoScalingMode) {
         playerView.updateScalingMode(mode)
+    }
+    
+    public func prepareForRemoval() {
+        playerView.detachPlayer()
+        self.contentView = nil
     }
     
     override public var canBecomeKey: Bool { false }
@@ -66,6 +71,11 @@ public final class DesktopPlayerView: NSView {
     
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
+    }
+    
+    public func detachPlayer() {
+        playerLayer.player = nil
+        playerLayer.removeFromSuperlayer()
     }
     
     override public func layout() {

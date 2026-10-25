@@ -31,6 +31,7 @@ public final class DesktopWallpaperController: NSObject, WallpaperPlayerDelegate
         
         onStatusChanged?(.loading)
         
+        // Load the new video asset first before touching windows
         try await player.loadVideo(url: url, loop: loop, muted: true)
         
         setupWindows()
@@ -75,11 +76,14 @@ public final class DesktopWallpaperController: NSObject, WallpaperPlayerDelegate
     
     @MainActor
     private func tearDownWindows() {
-        for window in wallpaperWindows {
+        let windowsToClean = wallpaperWindows
+        wallpaperWindows.removeAll()
+        
+        for window in windowsToClean {
+            window.prepareForRemoval()
             window.orderOut(nil)
             window.close()
         }
-        wallpaperWindows.removeAll()
     }
     
     // MARK: - PowerMonitorDelegate
