@@ -19,6 +19,12 @@ mkdir -p "${RESOURCES_DIR}"
 # Copy binary
 cp "${BUILD_DIR}/${APP_NAME}" "${MACOS_DIR}/${APP_NAME}"
 
+# Copy icon if available
+if [ -f "Assets/AppIcon.icns" ]; then
+    echo "🎨 Bundling AppIcon.icns..."
+    cp "Assets/AppIcon.icns" "${RESOURCES_DIR}/AppIcon.icns"
+fi
+
 # Generate Info.plist
 cat <<EOF > "${CONTENTS_DIR}/Info.plist"
 <?xml version="1.0" encoding="UTF-8"?>
@@ -27,6 +33,8 @@ cat <<EOF > "${CONTENTS_DIR}/Info.plist"
 <dict>
     <key>CFBundleExecutable</key>
     <string>${APP_NAME}</string>
+    <key>CFBundleIconFile</key>
+    <string>AppIcon</string>
     <key>CFBundleIdentifier</key>
     <string>com.livepaper.macos</string>
     <key>CFBundleName</key>
