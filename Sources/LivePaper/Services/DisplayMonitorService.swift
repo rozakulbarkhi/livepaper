@@ -7,6 +7,8 @@ public protocol DisplayMonitorDelegate: AnyObject, Sendable {
     func systemDidWake()
     func screensDidSleep()
     func screensDidWake()
+    func screenIsLocked()
+    func screenIsUnlocked()
 }
 
 public final class DisplayMonitorService: @unchecked Sendable {
@@ -21,6 +23,7 @@ public final class DisplayMonitorService: @unchecked Sendable {
         for observer in observers {
             NotificationCenter.default.removeObserver(observer)
             NSWorkspace.shared.notificationCenter.removeObserver(observer)
+            DistributedNotificationCenter.default().removeObserver(observer)
         }
     }
     
@@ -74,5 +77,25 @@ public final class DisplayMonitorService: @unchecked Sendable {
             self?.delegate?.screensDidWake()
         }
         observers.append(screensWakeObserver)
+        
+        // Screen Lock Notifications
+        let lockObserver = DistributedNotificationCenter.default().addObserver(
+            forName: NSNotification.Name("com.apple.screenIsLocked"),
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.delegate?.screenIsLocked()
+        }
+        observers.append(lockObserver)
+        
+        // Screen Unlock Notifications
+        let unlockObserver = DistributedNotificationCenter.default().addObserver(
+            forName: NSNotification.Name("com.apple.screenIsUnlocked"),
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.delegate?.screenIsUnlocked()
+        }
+        observers.append(unlockObserver)
     }
 }

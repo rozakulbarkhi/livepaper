@@ -20,10 +20,10 @@ public final class DesktopWallpaperWindow: NSWindow {
         self.backgroundColor = .black
         self.hasShadow = false
         
-        // Set window level to desktop level (just above desktop background, below icons)
+        // Desktop window level (behind desktop icons during normal desktop use)
         self.level = NSWindow.Level(Int(CGWindowLevelForKey(.desktopWindow)))
         
-        // Ensure seamless display on all spaces and full screens
+        // Ensure seamless display on all spaces, full screens, and across system spaces
         self.collectionBehavior = [
             .canJoinAllSpaces,
             .stationary,
@@ -37,6 +37,17 @@ public final class DesktopWallpaperWindow: NSWindow {
         
         self.contentView = playerView
         self.setFrame(screen.frame, display: true)
+    }
+    
+    public func setLockScreenMode(_ isLocked: Bool) {
+        if isLocked {
+            // Elevate window level during lock screen so wallpaper renders directly beneath the lock UI
+            self.level = NSWindow.Level(Int(CGWindowLevelForKey(.screenSaverWindow)) - 1)
+        } else {
+            // Restore desktop level when unlocked
+            self.level = NSWindow.Level(Int(CGWindowLevelForKey(.desktopWindow)))
+        }
+        self.orderFront(nil)
     }
     
     public func updateScalingMode(_ mode: VideoScalingMode) {

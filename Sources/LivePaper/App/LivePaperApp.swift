@@ -50,7 +50,8 @@ struct LivePaperApp: App {
                             url: url,
                             scalingMode: settings.configuration.scalingMode,
                             loop: settings.configuration.isLooping,
-                            pauseOnBattery: settings.configuration.pauseOnBattery
+                            pauseOnBattery: settings.configuration.pauseOnBattery,
+                            applyOnLockScreen: settings.configuration.applyOnLockScreen
                         )
                     } catch {
                         print("[LivePaperApp] Auto-play failed: \(error.localizedDescription)")

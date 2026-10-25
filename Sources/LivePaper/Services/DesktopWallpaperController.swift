@@ -13,6 +13,7 @@ public final class DesktopWallpaperController: NSObject, WallpaperPlayerDelegate
     private var currentScalingMode: VideoScalingMode = .aspectFill
     private var isPlayingWallpaper = false
     public var pauseOnBatteryEnabled = false
+    public var applyOnLockScreenEnabled = true
     
     public var onStatusChanged: (@Sendable (WallpaperStatus) -> Void)?
     
@@ -24,14 +25,14 @@ public final class DesktopWallpaperController: NSObject, WallpaperPlayerDelegate
     }
     
     @MainActor
-    public func startWallpaper(url: URL, scalingMode: VideoScalingMode, loop: Bool = true, pauseOnBattery: Bool = false) async throws {
+    public func startWallpaper(url: URL, scalingMode: VideoScalingMode, loop: Bool = true, pauseOnBattery: Bool = false, applyOnLockScreen: Bool = true) async throws {
         self.currentURL = url
         self.currentScalingMode = scalingMode
         self.pauseOnBatteryEnabled = pauseOnBattery
+        self.applyOnLockScreenEnabled = applyOnLockScreen
         
         onStatusChanged?(.loading)
         
-        // Load the new video asset first before touching windows
         try await player.loadVideo(url: url, loop: loop, muted: true)
         
         setupWindows()
@@ -162,6 +163,26 @@ public final class DesktopWallpaperController: NSObject, WallpaperPlayerDelegate
                     return
                 }
                 self.player.play()
+            }
+        }
+    }
+    
+    public func screenIsLocked() {
+        Task { @MainActor in
+            guard self.isPlayingWallpaper, self.applyOnLockScreenEnabled else { return }
+            print("[DesktopWallpaperController] Screen locked. Elevating live wallpaper windows...")
+            for window in self.wallpaperWindows {
+                window.setLockScreenMode(true)
+            }
+        }
+    }
+    
+    public func screenIsUnlocked() {
+        Task { @MainActor in
+            guard self.isPlayingWallpaper else { return }
+            print("[DesktopWallpaperController] Screen unlocked. Restoring live wallpaper windows...")
+            for window in self.wallpaperWindows {
+                window.setLockScreenMode(false)
             }
         }
     }

@@ -42,6 +42,7 @@ public struct WallpaperConfiguration: Codable, Equatable, Sendable {
     public var isMuted: Bool
     public var isLooping: Bool
     public var pauseOnBattery: Bool
+    public var applyOnLockScreen: Bool
     public var scalingMode: VideoScalingMode
     public var autoPlayOnLaunch: Bool
     public var launchAtLogin: Bool
@@ -54,6 +55,7 @@ public struct WallpaperConfiguration: Codable, Equatable, Sendable {
         isMuted: Bool = true,
         isLooping: Bool = true,
         pauseOnBattery: Bool = false,
+        applyOnLockScreen: Bool = true,
         scalingMode: VideoScalingMode = .aspectFill,
         autoPlayOnLaunch: Bool = true,
         launchAtLogin: Bool = false,
@@ -65,6 +67,7 @@ public struct WallpaperConfiguration: Codable, Equatable, Sendable {
         self.isMuted = isMuted
         self.isLooping = isLooping
         self.pauseOnBattery = pauseOnBattery
+        self.applyOnLockScreen = applyOnLockScreen
         self.scalingMode = scalingMode
         self.autoPlayOnLaunch = autoPlayOnLaunch
         self.launchAtLogin = launchAtLogin

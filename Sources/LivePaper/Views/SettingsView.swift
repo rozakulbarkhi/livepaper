@@ -44,6 +44,22 @@ public struct SettingsView: View {
                 
                 Divider()
                 
+                // Lock Screen toggle
+                Toggle(isOn: $settings.configuration.applyOnLockScreen) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Label("Apply While Lock Screen", systemImage: "lock.display")
+                        Text("Keep live wallpaper active and visible when Mac is locked")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                }
+                .onChange(of: settings.configuration.applyOnLockScreen) { _, enabled in
+                    settings.save()
+                    DesktopWallpaperController.shared.applyOnLockScreenEnabled = enabled
+                }
+                
+                Divider()
+                
                 // Battery Saver toggle
                 Toggle(isOn: $settings.configuration.pauseOnBattery) {
                     VStack(alignment: .leading, spacing: 2) {
@@ -89,16 +105,16 @@ public struct SettingsView: View {
                     .fill(Color(nsColor: .controlBackgroundColor))
             )
             
-            // Lock Screen Info Notice
+            // Background app tip
             HStack(alignment: .top, spacing: 10) {
-                Image(systemName: "lock.shield")
-                    .foregroundColor(.secondary)
+                Image(systemName: "sparkles.tv")
+                    .foregroundColor(.accentColor)
                     .font(.title3)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Lock Screen Live Wallpaper Support")
+                    Text("Background Menu Bar Mode")
                         .font(.subheadline)
                         .fontWeight(.semibold)
-                    Text("macOS Tahoe 26 does not provide public APIs for arbitrary lock screen video wallpapers. Desktop wallpaper is fully active behind your icons.")
+                    Text("You can close this window at any time. LivePaper will stay running in the background and can be controlled via the menu bar icon.")
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
