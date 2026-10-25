@@ -37,44 +37,34 @@ public final class LivePaperSaverView: ScreenSaverView {
     private func loadAndPlayVideo() {
         teardownPlayer()
         
-        guard let defaults = UserDefaults(suiteName: "com.livepaper.macos"),
-              let configData = defaults.data(forKey: "com.livepaper.configuration") else {
-            return
-        }
+        let homeDir = NSHomeDirectory()
+        let appSupportPath = "\(homeDir)/Library/Application Support/LivePaper"
+        let activeVideoPath = "\(appSupportPath)/active_wallpaper.mp4"
+        let configPath = "\(appSupportPath)/config.json"
         
         var targetURL: URL?
         var scalingGravity: AVLayerVideoGravity = .resizeAspectFill
         
-        do {
-            if let json = try JSONSerialization.jsonObject(with: configData) as? [String: Any] {
-                if let mode = json["scalingMode"] as? String, mode == "aspectFit" {
-                    scalingGravity = .resizeAspect
-                }
-                
-                if let bookmarkString = json["videoBookmark"] as? String,
-                   let bookmarkData = Data(base64Encoded: bookmarkString) {
-                    var isStale = false
-                    targetURL = try? URL(
-                        resolvingBookmarkData: bookmarkData,
-                        options: .withSecurityScope,
-                        relativeTo: nil,
-                        bookmarkDataIsStale: &isStale
-                    )
-                }
-                
-                if targetURL == nil, let path = json["videoPath"] as? String {
-                    targetURL = URL(fileURLWithPath: path)
-                }
+        if let configData = try? Data(contentsOf: URL(fileURLWithPath: configPath)),
+           let json = try? JSONSerialization.jsonObject(with: configData) as? [String: Any] {
+            if let mode = json["scalingMode"] as? String, mode == "aspectFit" {
+                scalingGravity = .resizeAspect
             }
-        } catch {
-            return
+            if let rawPath = json["videoPath"] as? String, FileManager.default.fileExists(atPath: rawPath) {
+                targetURL = URL(fileURLWithPath: rawPath)
+            }
         }
         
-        guard let videoURL = targetURL, FileManager.default.fileExists(atPath: videoURL.path) else {
-            return
+        // If rawPath isn't accessible due to sandbox, fall back to active_wallpaper.mp4 in Application Support
+        if targetURL == nil || !FileManager.default.fileExists(atPath: targetURL!.path) {
+            if FileManager.default.fileExists(atPath: activeVideoPath) {
+                targetURL = URL(fileURLWithPath: activeVideoPath)
+            }
         }
         
-        _ = videoURL.startAccessingSecurityScopedResource()
+        guard let videoURL = targetURL else {
+            return
+        }
         
         let item = AVPlayerItem(url: videoURL)
         let queuePlayer = AVQueuePlayer(playerItem: item)
@@ -109,7 +99,7 @@ public final class LivePaperSaverView: ScreenSaverView {
     }
     
     override public func animateOneFrame() {
-        // AVPlayerLayer handles video frame composition on GPU
+        // AVPlayerLayer handles GPU composition
     }
     
     override public var hasConfigureSheet: Bool {

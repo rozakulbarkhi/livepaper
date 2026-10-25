@@ -13,11 +13,26 @@ public final class WallpaperPersistenceService: WallpaperPersistenceServiceProto
     private let userDefaults: UserDefaults
     private let configKey = "com.livepaper.configuration"
     
+    private var sharedConfigFileURL: URL {
+        let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+        let dir = appSupport.appendingPathComponent("LivePaper", isDirectory: true)
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        return dir.appendingPathComponent("config.json")
+    }
+    
     public init(userDefaults: UserDefaults = .standard) {
         self.userDefaults = userDefaults
     }
     
     public func load() -> WallpaperConfiguration {
+        // First try shared config file (readable by legacyScreenSaver)
+        if let fileData = try? Data(contentsOf: sharedConfigFileURL) {
+            if let config = try? JSONDecoder().decode(WallpaperConfiguration.self, from: fileData) {
+                return config
+            }
+        }
+        
+        // Fallback to UserDefaults
         guard let data = userDefaults.data(forKey: configKey) else {
             return WallpaperConfiguration()
         }
@@ -32,7 +47,18 @@ public final class WallpaperPersistenceService: WallpaperPersistenceServiceProto
     public func save(configuration: WallpaperConfiguration) {
         do {
             let data = try JSONEncoder().encode(configuration)
+            // Save to UserDefaults
             userDefaults.set(data, forKey: configKey)
+            
+            // Also write to shared config file in Application Support for LivePaper.saver
+            try? data.write(to: sharedConfigFileURL, options: .atomic)
+            
+            // Also write active video copy or symlink in Application Support/LivePaper/active_wallpaper.mp4
+            if let path = configuration.videoPath, FileManager.default.fileExists(atPath: path) {
+                let activeVideoPath = sharedConfigFileURL.deletingLastPathComponent().appendingPathComponent("active_wallpaper.mp4")
+                try? FileManager.default.removeItem(at: activeVideoPath)
+                try? FileManager.default.copyItem(at: URL(fileURLWithPath: path), to: activeVideoPath)
+            }
         } catch {
             print("[WallpaperPersistenceService] Failed to encode configuration: \(error)")
         }
