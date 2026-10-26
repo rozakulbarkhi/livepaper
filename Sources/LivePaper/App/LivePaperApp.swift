@@ -4,6 +4,7 @@ import AppKit
 @main
 struct LivePaperApp: App {
     @StateObject private var settings = WallpaperSettings()
+    @State private var hasInitialized = false
     
     init() {}
     
@@ -11,7 +12,7 @@ struct LivePaperApp: App {
         Window("LivePaper", id: "main-window") {
             ContentView(settings: settings)
                 .onAppear {
-                    setupApp()
+                    triggerStartup()
                 }
         }
         .windowStyle(.titleBar)
@@ -20,8 +21,17 @@ struct LivePaperApp: App {
         
         MenuBarExtra("LivePaper", systemImage: "sparkles.tv") {
             MenuBarView(settings: settings)
+                .onAppear {
+                    triggerStartup()
+                }
         }
         .menuBarExtraStyle(.window)
+    }
+    
+    private func triggerStartup() {
+        guard !hasInitialized else { return }
+        hasInitialized = true
+        setupApp()
     }
     
     private func setupApp() {
@@ -41,6 +51,14 @@ struct LivePaperApp: App {
             }
             if targetURL == nil {
                 targetURL = URL(fileURLWithPath: path)
+            }
+            
+            // Fallback to shared copied video if original file path is temporarily inaccessible at boot
+            if targetURL == nil || !FileManager.default.fileExists(atPath: targetURL!.path) {
+                let fallback = LockScreenWallpaperAdapter.shared.livePaperDirectory.appendingPathComponent("active_wallpaper.mp4")
+                if FileManager.default.fileExists(atPath: fallback.path) {
+                    targetURL = fallback
+                }
             }
             
             if let url = targetURL, FileManager.default.fileExists(atPath: url.path) {
