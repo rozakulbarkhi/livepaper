@@ -76,11 +76,6 @@ public struct MenuBarView: View {
                 }
                 .keyboardShortcut("o", modifiers: .command)
                 
-                Button(action: lockWithScreenSaver) {
-                    Label("Lock Screen (Live Wallpaper)", systemImage: "lock.shield.fill")
-                }
-                .keyboardShortcut("l", modifiers: [.command, .control])
-                
                 Divider()
                 
                 Button(role: .destructive, action: quitApp) {
@@ -162,13 +157,6 @@ public struct MenuBarView: View {
         } else {
             openWindow(id: "main-window")
         }
-    }
-    
-    private func lockWithScreenSaver() {
-        let task = Process()
-        task.launchPath = "/usr/bin/open"
-        task.arguments = ["/System/Library/CoreServices/ScreenSaverEngine.app"]
-        try? task.run()
     }
     
     private func quitApp() {

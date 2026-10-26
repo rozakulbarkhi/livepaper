@@ -25,9 +25,6 @@ if [ -f "Assets/AppIcon.icns" ]; then
     cp "Assets/AppIcon.icns" "${RESOURCES_DIR}/AppIcon.icns"
 fi
 
-# Build companion Screen Saver
-./scripts/build_saver.sh
-
 # Generate Info.plist
 cat <<EOF > "${CONTENTS_DIR}/Info.plist"
 <?xml version="1.0" encoding="UTF-8"?>
@@ -61,10 +58,8 @@ EOF
 echo "🔏 Ad-hoc code signing..."
 codesign --force --deep --sign - "${APP_BUNDLE}"
 
-echo "🗜 Creating zip archive with LivePaper.app and LivePaper.saver..."
+echo "🗜 Creating zip archive with LivePaper.app..."
 rm -f "${APP_NAME}-macOS.zip"
-ditto -c -k --sequesterRsrc --keepParent "${APP_BUNDLE}" "temp_app.zip"
-zip -r "${APP_NAME}-macOS.zip" "${APP_BUNDLE}" "LivePaper.saver"
-rm -f "temp_app.zip"
+zip -r "${APP_NAME}-macOS.zip" "${APP_BUNDLE}"
 
-echo "✅ Successfully built: ${APP_BUNDLE}, LivePaper.saver, and ${APP_NAME}-macOS.zip"
+echo "✅ Successfully built: ${APP_BUNDLE} and ${APP_NAME}-macOS.zip"
