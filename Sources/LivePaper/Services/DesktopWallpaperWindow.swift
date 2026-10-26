@@ -41,13 +41,15 @@ public final class DesktopWallpaperWindow: NSWindow {
     
     public func setLockScreenMode(_ isLocked: Bool) {
         if isLocked {
-            // Elevate window level during lock screen so wallpaper renders directly beneath the lock UI
-            self.level = NSWindow.Level(Int(CGWindowLevelForKey(.screenSaverWindow)) - 1)
+            // Elevate window level above user-space applications (shielding / lock level)
+            // kCGShieldingWindowLevel is 2147483628, placed just under the secure login dialog
+            self.level = NSWindow.Level(Int(CGShieldingWindowLevel()) - 1)
+            self.orderFrontRegardless()
         } else {
-            // Restore desktop level when unlocked
+            // Restore desktop level when unlocked (behind Finder desktop icons)
             self.level = NSWindow.Level(Int(CGWindowLevelForKey(.desktopWindow)))
+            self.orderFront(nil)
         }
-        self.orderFront(nil)
     }
     
     public func updateScalingMode(_ mode: VideoScalingMode) {
