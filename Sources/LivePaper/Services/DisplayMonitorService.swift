@@ -9,6 +9,8 @@ public protocol DisplayMonitorDelegate: AnyObject, Sendable {
     func screensDidWake()
     func screenIsLocked()
     func screenIsUnlocked()
+    func screenSaverDidStart()
+    func screenSaverDidStop()
 }
 
 public final class DisplayMonitorService: @unchecked Sendable {
@@ -97,5 +99,34 @@ public final class DisplayMonitorService: @unchecked Sendable {
             self?.delegate?.screenIsUnlocked()
         }
         observers.append(unlockObserver)
+        
+        // Screen Saver Did Start Notifications
+        let saverStartObserver = DistributedNotificationCenter.default().addObserver(
+            forName: NSNotification.Name("com.apple.screensaver.didstart"),
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.delegate?.screenSaverDidStart()
+        }
+        observers.append(saverStartObserver)
+        
+        // Screen Saver Did Stop Notifications
+        let saverStopObserver = DistributedNotificationCenter.default().addObserver(
+            forName: NSNotification.Name("com.apple.screensaver.didstop"),
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.delegate?.screenSaverDidStop()
+        }
+        observers.append(saverStopObserver)
+        
+        let saverWillStopObserver = DistributedNotificationCenter.default().addObserver(
+            forName: NSNotification.Name("com.apple.screensaver.willstop"),
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.delegate?.screenSaverDidStop()
+        }
+        observers.append(saverWillStopObserver)
     }
 }

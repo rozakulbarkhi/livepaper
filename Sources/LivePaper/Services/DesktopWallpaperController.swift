@@ -191,4 +191,25 @@ public final class DesktopWallpaperController: NSObject, WallpaperPlayerDelegate
             }
         }
     }
+    
+    public func screenSaverDidStart() {
+        Task { @MainActor in
+            guard self.isPlayingWallpaper else { return }
+            print("[DesktopWallpaperController] Screen saver did start. Elevating live wallpaper windows...")
+            for window in self.wallpaperWindows {
+                window.setLockScreenMode(true)
+            }
+            self.player.play()
+        }
+    }
+    
+    public func screenSaverDidStop() {
+        Task { @MainActor in
+            guard self.isPlayingWallpaper else { return }
+            print("[DesktopWallpaperController] Screen saver did stop. Restoring live wallpaper windows...")
+            for window in self.wallpaperWindows {
+                window.setLockScreenMode(false)
+            }
+        }
+    }
 }
