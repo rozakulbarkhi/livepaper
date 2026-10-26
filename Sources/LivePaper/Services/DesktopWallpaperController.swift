@@ -37,6 +37,11 @@ public final class DesktopWallpaperController: NSObject, WallpaperPlayerDelegate
         
         setupWindows()
         
+        // Sync active wallpaper video to shared locations & apply poster to lock screen
+        Task.detached(priority: .userInitiated) {
+            try? await LockScreenWallpaperAdapter.shared.syncWallpaper(from: url)
+        }
+        
         if pauseOnBattery && powerMonitor.isOnBattery {
             onStatusChanged?(.paused)
         } else {

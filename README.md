@@ -20,14 +20,16 @@ Targeted for **macOS 14.0+ through macOS Tahoe 26.0+**, designed for personal us
 - **Configurable Video Scaling**: Supports both **Aspect Fill** (`.resizeAspectFill`) and **Aspect Fit** (`.resizeAspect`).
 - **Launch at Login**: Integrates native macOS `SMAppService.mainApp` for clean login startup.
 
-### 2. Lock Screen Live Wallpaper (Investigation & Feasibility)
-- **Public API Status on macOS Tahoe 26**:
-  - Apple does **not** provide any public developer API to render arbitrary video streams directly onto the native macOS lock screen prior to screen-saver activation.
-  - System dynamic aerial wallpapers and lock screen transitions are managed internally by private system daemons (`idleassetsd`, `com.apple.wallpaper`, and `ScreenSaverEngine`).
-  - System locations (`/System/Library/Desktop Pictures/` and asset caches) are protected by **System Integrity Protection (SIP)**.
+### 2. Screen Saver & Lock Screen Integration
+- **Screen Saver (`LivePaper.saver`)**:
+  - Native macOS `.saver` plugin built with `ScreenSaverView` and `AVPlayerLooper`.
+  - Automatically loads and plays the active video copied to shared user directories (`~/Movies/LivePaper/` and `~/Library/Application Support/LivePaper/`).
+- **Lock Screen Synchronization**:
+  - **Poster Frame Generation**: Automatically extracts the initial frame of the video and encodes it into a 95% quality `.heic` image (`lockscreen_poster.heic`).
+  - **System Wallpaper Sync**: Sets the poster frame as the native macOS desktop and lock screen image via `NSWorkspace.shared.setDesktopImageURL(...)`.
+  - **Seamless Lock Transition**: When paired with the native macOS screen saver or lock screen, the transition from desktop video to lock screen poster occurs without black frames or visual flicker.
 - **Safety Policy**:
-  - `LivePaper` adheres strictly to standard Apple security guidelines. It **does not** require root, does **not** disable SIP, and does **not** tamper with or overwrite system files.
-  - An isolated `LockScreenWallpaperAdapter` protocol is provided in the codebase to report capability status and maintain a clear separation of concerns.
+  - `LivePaper` adheres strictly to standard Apple security guidelines. It **does not** require root, does **not** tamper with private `idleassetsd` catalogs or SIP-protected files, and operates cleanly within standard macOS permissions.
 
 ---
 

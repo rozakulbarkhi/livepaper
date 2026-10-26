@@ -53,12 +53,12 @@ final class LivePaperTests: XCTestCase {
     func testLockScreenCapabilityReport() {
         let adapter = LockScreenWallpaperAdapter()
         let capability = adapter.evaluateCapability()
-        XCTAssertFalse(adapter.isSupported())
+        XCTAssertTrue(adapter.isSupported())
         
-        if case .unsupported(let reason) = capability {
-            XCTAssertTrue(reason.contains("macOS"))
+        if case .supported(let method) = capability {
+            XCTAssertTrue(method.contains("poster"))
         } else {
-            XCTFail("Lock screen should be reported as unsupported via public APIs")
+            XCTFail("Lock screen should be supported via poster and screensaver synchronization")
         }
     }
     
